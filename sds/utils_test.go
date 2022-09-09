@@ -18,10 +18,10 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	types "github.com/gogo/protobuf/types"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/smallstep/certificates/ca"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const testRootCA = `-----BEGIN CERTIFICATE-----
@@ -115,21 +115,21 @@ func Test_getDiscoveryResponse(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req1 := &api.DiscoveryRequest{
+	req1 := &discovery.DiscoveryRequest{
 		VersionInfo:   "versionInfo",
 		Node:          &core.Node{Id: "node-id", Cluster: "node-cluster"},
 		ResourceNames: []string{"foo.smallstep.com"},
 		TypeUrl:       "type.googleapis.com/envoy.api.v2.auth.Secret",
 		ResponseNonce: "response-nonce",
 	}
-	req2 := &api.DiscoveryRequest{
+	req2 := &discovery.DiscoveryRequest{
 		VersionInfo:   "versionInfo",
 		Node:          &core.Node{Id: "node-id", Cluster: "node-cluster"},
 		ResourceNames: []string{"trusted_ca"},
 		TypeUrl:       "type.googleapis.com/envoy.api.v2.auth.Secret",
 		ResponseNonce: "response-nonce",
 	}
-	req3 := &api.DiscoveryRequest{
+	req3 := &discovery.DiscoveryRequest{
 		VersionInfo:   "versionInfo",
 		Node:          &core.Node{Id: "node-id", Cluster: "node-cluster"},
 		ResourceNames: []string{"trusted_ca"},
@@ -137,9 +137,9 @@ func Test_getDiscoveryResponse(t *testing.T) {
 		ResponseNonce: "response-nonce",
 	}
 
-	resp1 := &api.DiscoveryResponse{
+	resp1 := &discovery.DiscoveryResponse{
 		VersionInfo: "versionInfo",
-		Resources: []types.Any{
+		Resources: []*anypb.Any{
 			{TypeUrl: "type.googleapis.com/envoy.api.v2.auth.Secret", Value: cert},
 		},
 		Canary:  false,
@@ -149,9 +149,9 @@ func Test_getDiscoveryResponse(t *testing.T) {
 			Identifier: "Smallstep SDS/0000000-dev",
 		},
 	}
-	resp2 := &api.DiscoveryResponse{
+	resp2 := &discovery.DiscoveryResponse{
 		VersionInfo: "versionInfo",
-		Resources: []types.Any{
+		Resources: []*anypb.Any{
 			{TypeUrl: "type.googleapis.com/envoy.api.v2.auth.Secret", Value: trustedCA},
 		},
 		Canary:  false,
@@ -161,9 +161,9 @@ func Test_getDiscoveryResponse(t *testing.T) {
 			Identifier: "Smallstep SDS/0000000-dev",
 		},
 	}
-	resp3 := &api.DiscoveryResponse{
+	resp3 := &discovery.DiscoveryResponse{
 		VersionInfo: "versionInfo",
-		Resources: []types.Any{
+		Resources: []*anypb.Any{
 			{TypeUrl: "type.googleapis.com/envoy.api.v2.auth.Secret", Value: validationContext},
 		},
 		Canary:  false,
@@ -175,7 +175,7 @@ func Test_getDiscoveryResponse(t *testing.T) {
 	}
 
 	type args struct {
-		r           *api.DiscoveryRequest
+		r           *discovery.DiscoveryRequest
 		versionInfo string
 		certs       []*tls.Certificate
 		roots       []*x509.Certificate
@@ -183,7 +183,7 @@ func Test_getDiscoveryResponse(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *api.DiscoveryResponse
+		want    *discovery.DiscoveryResponse
 		wantErr bool
 	}{
 		{"ok cert", args{req1, "versionInfo", certs, roots}, resp1, false},
